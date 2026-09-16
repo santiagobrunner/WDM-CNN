@@ -3,7 +3,7 @@ name = "wdm_cnn"
 version = "0.1.0"
 description = "CNN-based classification of dark matter models from mock galaxy imaging"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["healpy", "numpy"]
 
 [build-system]
 requires = ["hatchling"]
