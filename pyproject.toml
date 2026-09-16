@@ -5,6 +5,9 @@ description = "CNN-based classification of dark matter models from mock galaxy i
 requires-python = ">=3.10"
 dependencies = ["healpy", "numpy"]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
