@@ -1,0 +1,443 @@
+#!/Users/santiagobrunner/anaconda3/envs/venv/bin/python
+
+import numpy as np
+
+from astropy import constants as cte
+from astropy import units as u
+
+import argparse
+
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+from pNbody import *
+from pNbody import ic
+
+import copy
+import pickle
+from astropy.io import fits
+
+from pNbody import Mockimgs
+from pNbody.Mockimgs.obs_object import Object
+from pNbody.Mockimgs import utils
+from pNbody.Mockimgs.los import LineOfSights
+
+  
+####################################################################
+# option parser
+####################################################################
+
+description="compute surface brightness images"
+epilog     ="""
+Examples:
+--------
+mockimgs_sb_compute_images --instruments_list
+mockimgs_sb_compute_images --filters_list
+mockimgs_sb_compute_images --instrument arrakihs_vis_G --info
+mockimgs_sb_compute_images --instrument arrakihs_vis_G --filter SB99_ARK_NIR2 --info
+
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --rsp_mode const -o output.fits
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --nlos 9 -o output.fits
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --nlos 9 --random_los -o output.fits
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --los 1 0 0 -o output.fits
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --fov 60 -o output.fits
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 -p params.yml -o output.fits
+
+mockimgs_sb_compute_images snapshot.hdf5 --instrument arrakihs_vis_G --distance 35 --rsp_mode const --rsp_val 1.5 --nlos 4 -o output.pkl
+mockimgs_sb_compute_images snapshot.hdf5 --instrument instrument.py  --distance 35 --rsp_mode const --rsp_val 1.5 --nlos 4 -o output.pkl
+
+in this last example, the file instrument.py contains something like : 
+
+instrument = instrument.Instrument(
+  name        = "arrakihs_vis_SDSSr",
+  telescope   = telescope.Telescope(name="iSIM-170",focal=1477.5*u.mm),
+  ccd         = ccd.CCD(name="CCD273-84"   ,shape=[3400,3400],pixel_size=[12*u.micron,12*u.micron]),
+  filter_type = filters.Filter("BastI_SDSS_r"),
+  )
+
+
+"""
+
+parser = argparse.ArgumentParser(description=description,epilog=epilog,formatter_class=argparse.RawDescriptionHelpFormatter)
+
+
+
+
+
+parser.add_argument(action="store", 
+                    dest="file", 
+                    metavar='FILE', 
+                    type=str,
+                    default=None,
+                    nargs='*',
+                    help='a file name') 
+
+parser.add_argument("-o",
+                    action="store",
+                    type=str,
+                    dest="outputfilename",
+                    default=None,
+                    help="Name of the output file")
+
+parser.add_argument("-v",'--verbose',
+                    action='store_true',
+                    default=False,
+                    help='verbose mode')
+
+parser.add_argument('--unitsfile',
+                    action="store",
+                    dest="unitsfile",
+                    metavar='FILE',
+                    type=str,
+                    default=None,
+                    help='pNbody unitsparameters file')
+
+parser.add_argument('--distance',
+                    action="store", 
+                    dest="distance", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=35,
+                    help='distance of the object in Mpc')
+
+parser.add_argument("--instrument",
+                    action="store", 
+                    dest="instrument", 
+                    metavar='STR', 
+                    type=str,
+                    default='arrakihs_vis_G',
+                    help='instrument name')             
+
+parser.add_argument("--magFromField",
+                    action="store", 
+                    dest="magFromField", 
+                    metavar='STR', 
+                    type=str,
+                    default=None,
+                    help='take the magnitude from the pNbody field with name magFromField')  
+
+            
+parser.add_argument("--fov",
+                    action="store", 
+                    dest="fov", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=None,
+                    help='field of view in arcsec') 
+                    
+parser.add_argument("--filter",
+                    action="store", 
+                    dest="filter", 
+                    metavar='STR', 
+                    type=str,
+                    default=None,
+                    help='filter name')    
+
+                    
+parser.add_argument("--rsp_mode",
+                    action="store", 
+                    dest="rsp_mode", 
+                    metavar='STRING', 
+                    type=str,
+                    default=None,
+                    help='smoothing mode')    
+
+parser.add_argument("--rsp_val",
+                    action="store", 
+                    dest="rsp_val", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=1,
+                    help='smoothing value when set to constant') 
+
+parser.add_argument("--rsp_max",
+                    action="store", 
+                    dest="rsp_max", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=5,
+                    help='max smoothing value') 
+                    
+parser.add_argument("--rsp_sca",
+                    action="store", 
+                    dest="rsp_sca", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=3,
+                    help='smoothing scale') 
+
+parser.add_argument("--rsp_fac",
+                    action="store", 
+                    dest="rsp_fac", 
+                    metavar='FLOAT', 
+                    type=float,
+                    default=1,
+                    help='rsp factor') 
+                                        
+parser.add_argument("--info",
+                    action="store_true", 
+                    dest="info", 
+                    default=False,
+                    help='get info (list of keys) and exit.')  
+
+
+parser.add_argument("-p",
+                    action="store",
+                    type=str,
+                    dest="parameter_file",
+                    default=None,
+                    required=False,
+                    help="Name of the parameter file")
+
+parser.add_argument('--remove_identical_coords',
+                    action='store_true',
+                    default=True,
+                    help='Remove particles with identical 3D coordinates')
+                    
+parser.add_argument('--no-remove_identical_coords',
+                    dest='remove_identical_coords',
+                    action='store_false')
+
+parser.add_argument('--mapping_method',
+                    default=None,
+                    help='Select kernel for mapping particles to CCD [gauss_old, gauss, spline]')
+
+parser.add_argument("--nlos",
+                    action="store", 
+                    dest="nlos", 
+                    metavar='INT', 
+                    type=int,
+                    help='number of line of sights')                     
+
+parser.add_argument("--random_los",
+                    action="store_true", 
+                    dest="random_los", 
+                    help='use random line of sights') 
+
+parser.add_argument("--los",
+                    action="store", 
+                    dest="los", 
+                    metavar='LOS', 
+                    type=float,
+                    nargs=3,
+                    help='coordinates of a line of sight')
+                    
+
+parser.add_argument("--random_seed",
+                    action="store", 
+                    dest="irand", 
+                    type=int,
+                    help='random seed') 
+
+
+parser.add_argument("--instruments_list",
+                    action="store_true", 
+                    dest="instruments_list", 
+                    default=False,                    
+                    help='give info on available instruments') 
+
+
+parser.add_argument("--filters_list",
+                    action="store_true", 
+                    dest="filters_list", 
+                    default=False,                    
+                    help='give info on available filters') 
+
+parser.add_argument("--psf",
+                    action="store", 
+                    dest="psf_filename", 
+                    metavar='FILE', 
+                    type=str,
+                    default=None,
+                    help='a psf fits file') 
+
+parser.add_argument("--output-flux",
+                    action="store_true", 
+                    dest="output_flux",
+                    default=False,
+                    help='store flux assuming')
+
+parser.add_argument("--IDsMap",
+                    action="store", 
+                    dest="IDsMap",
+                    type=str,
+                    default=None,
+                    help='compute and store a matrix that contains IDs of particles')
+
+parser.add_argument("--los_file",
+                    action="store", 
+                    dest="los_file", 
+                    metavar='STR', 
+                    type=str,
+                    default=None,
+                    help='text file containing list of line of sight coordinates (one per line, x y z)') # Additional argument to specify arbitrarily many LOS
+                    
+
+####################################################################
+# main
+####################################################################
+
+
+if __name__ == '__main__':
+  
+  cmdline = " ".join(sys.argv)
+  
+  opt = parser.parse_args()
+  
+  
+  if opt.instruments_list:
+    Mockimgs.InstrumentsList()
+    exit()
+
+  if opt.filters_list:
+    Mockimgs.filters.List()
+    exit()
+    
+    
+
+  images = []
+  
+  # create the instrument
+  
+  if os.path.isfile(opt.instrument):
+    from pNbody.Mockimgs import instrument
+    from pNbody.Mockimgs import telescope
+    from pNbody.Mockimgs import filters
+    from pNbody.Mockimgs import ccd
+    exec(open(opt.instrument).read(),globals())
+  else:
+    instrument = Mockimgs.instruments[opt.instrument]
+  
+  # change CCD
+  #instrument.ccd     = Mockimgs.ccds["DECam"]
+  
+
+  if opt.fov is not None:
+    instrument.change_fov([opt.fov*u.arcsec,opt.fov*u.arcsec]) 
+  
+    
+  # add filter if needed
+  if opt.filter is not None:
+    instrument.set_filter(opt.filter)   
+    
+  if opt.mapping_method is not None:
+      instrument.set_mapping_method(opt.mapping_method)
+
+  # create the object to observe
+  adjust_coords = list()
+  if opt.remove_identical_coords:
+      adjust_coords.append('remove_identical')
+  
+  # take model name as the filename
+  object_name = os.path.basename(opt.file[0])
+  
+  galaxy = Object(name=object_name,filename=opt.file,
+          unitsfile=opt.unitsfile,
+          adjust_coords=adjust_coords,
+          distance=opt.distance*u.Mpc)
+
+  # define line of sights
+  los = LineOfSights(opt=opt,parameter_file=opt.parameter_file)
+  # HERE WE CHANGE MANUALLY THE LOS TO THE HEALPY PIXEL CENTERS, GIVEN A LIST OF LOS
+  if opt.los_file is not None:
+    los_list = np.loadtxt(opt.los_file)
+    if los_list.ndim == 1:
+      los_list = los_list.reshape(1,3)
+    los.axes = los_list.tolist()
+  galaxy.set_los(los)
+
+  # set rsp (smoothing) options
+  rsp_opts = utils.convert_rsp_options_to_parameters(opt)
+  galaxy.set_rsp_opts(rsp_opts)
+
+
+  # add the object to the instrument
+  instrument.add_object(galaxy)
+  
+
+  # set the name of output files
+  save_fits = False
+  if opt.outputfilename:
+    if os.path.splitext(opt.outputfilename)[-1] == ".fits":
+      save_fits = True
+      if los.n()>1:
+        outputfilenames = []
+        for i in range(los.n()):
+          filename = "%s_LOS%02d.fits"%(os.path.splitext(opt.outputfilename)[0],i)
+          outputfilenames.append(filename)
+      else:
+        outputfilenames = [opt.outputfilename]      
+    else:
+      outputfilenames = [opt.outputfilename]  
+
+
+  # get info
+  
+  if opt.info:
+    instrument.info()
+    exit()
+
+
+  for i,axe in enumerate(instrument.object.los):
+    
+    #print("object: %s"%instrument.object.filename)
+    #print("los   : %s"%instrument.object.los.get())
+    
+    # prepare the object for exposure
+    if opt.magFromField is None:
+      getAgeMH=True
+    else:
+      getAgeMH=False
+      
+    instrument.set_object_for_exposure(getAgeMH=getAgeMH)    
+
+
+    if opt.IDsMap:
+      IDsMap = instrument.ComputeIDsMap()
+      np.save(opt.IDsMap, IDsMap)
+      print("saving %s"%opt.IDsMap)
+      print("Quit !")
+      # here we need to quit, as the pNbody model is altered
+      exit()
+    
+
+    # get the flux map
+    instrument.ComputeFluxMap(opt.magFromField)
+    instrument.FilterFluxMap(opt)
+    instrument.SurfaceBrightnessMap() 
+        
+    fx_image = instrument.getFluxMap()
+    sb_image = instrument.getSurfaceBrightnessMap()
+
+    
+    if save_fits:      
+      comments = ["command line:",cmdline]
+      
+      if opt.output_flux:
+        # assume zero point = 0
+        zp = 0  
+        Omega = instrument.ccd.pixel_area.to(u.arcsec**2).value
+        sb_image = Omega*10**(-(sb_image-zp)/2.5)
+        instrument.saveFitsImage(sb_image,outputfilenames[i],units="undefined flux",comments=comments)
+      else:
+        instrument.saveFitsImage(sb_image,outputfilenames[i],units="mag/arcsec^2",comments=comments)
+    
+    else:  
+  
+      # append to the list of images  
+      #opt_tmp = copy.copy(opt)
+      parameters = instrument.get_parameters()
+      # remove what is not picklable
+      #del opt_tmp.Filter
+      images.append((fx_image,parameters))
+  
+
+
+  
+  if (opt.outputfilename is not None) and (save_fits is False):
+    
+    f = open(opt.outputfilename,'wb')
+    pickle.dump(images,f)
+    f.close()
+    
+
