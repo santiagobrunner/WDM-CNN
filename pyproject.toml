@@ -3,10 +3,22 @@ name = "wdm_cnn"
 version = "0.1.0"
 description = "CNN-based classification of dark matter models from mock galaxy imaging"
 requires-python = ">=3.10"
-dependencies = ["healpy", "numpy"]
-
+dependencies = [
+    "numpy",
+    "astropy",
+    "h5py",
+    "healpy",
+    "matplotlib",
+    "pandas",
+    "scikit-learn",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "PyYAML",
+    "pNbody @ git+https://gitlab.com/revaz/pNbody.git@b3019209a336572e272d08cfa5336f3bcb812736",
+]
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff"]
 
 [build-system]
 requires = ["hatchling"]
