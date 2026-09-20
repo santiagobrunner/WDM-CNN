@@ -5,10 +5,19 @@ from pathlib import Path
 import numpy as np
 import pytest
 from astropy.io import fits
+try:
+    import pNbody  # noqa: F401
+    PNBODY_AVAILABLE = True
+except ImportError:
+    PNBODY_AVAILABLE = False
 
-from wdm_cnn.data.io import get_data, get_label, load_images
-from wdm_cnn.data.photometry import add_noise, get_flux
+pytestmark = pytest.mark.skipif(
+    not PNBODY_AVAILABLE, reason="pNbody is not importable in this environment"
+)
 
+if PNBODY_AVAILABLE:
+    from wdm_cnn.data.io import get_data, get_label, load_images
+    from wdm_cnn.data.photometry import add_noise, get_flux
 DM_MODELS = ["wdm07d5", "wdm10", "cdm"]
 
 
