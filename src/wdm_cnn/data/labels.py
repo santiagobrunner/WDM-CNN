@@ -11,16 +11,7 @@ from typing import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
-
-# Inverse WDM particle mass (1/keV) per dark matter model. CDM is treated
-# as the m_WDM -> infinity limit, hence inverse mass 0.
-_INV_MASSES = {
-    "wdm03d5": 1 / 3.5,
-    "wdm05": 1 / 5.0,
-    "wdm07d5": 1 / 7.5,
-    "wdm10": 1 / 10.0,
-    "cdm": 0.0,
-}
+from config import _INV_MASSES
 
 
 def label_str2int(labels_str: Sequence[str], dm_models: Sequence[str]) -> NDArray[np.int64]:

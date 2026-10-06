@@ -14,8 +14,7 @@ from astropy.io import fits
 from numpy.typing import NDArray
 
 from wdm_cnn.data.photometry import add_noise
-
-DEFAULT_SNAPSHOTS = (60, 63, 66, 69, 72, 75, 80, 85, 90, 95, 100)
+from config import DEFAULT_SNAPSHOTS
 
 
 def get_label(filename: str, dm_models: Sequence[str]) -> Optional[str]:

@@ -15,40 +15,14 @@ import numpy as np
 from wdm_cnn.data.io import get_data
 from wdm_cnn.data.labels import label_inv_mass, label_str2int
 from wdm_cnn.preprocessing.multiband import make_3channel_scaler_input
+from config import ( CSCS_ROOT, CSCS_THESIS, UZH_ROOT, UZH_THESIS, 
+                    DM_MODELS_3, DM_MODELS_5, EXCLUDED_PAIRS, _ROT_TAG_MAP)
 
 if TYPE_CHECKING:
     # Only needed for type hints -- kept out of the runtime import path so
     # this module (and its pure suffix-building functions in particular)
     # doesn't require torch to be installed just to be imported/tested.
     from torch.utils.data import DataLoader
-
-# (halo_number, dm_model) pairs excluded from training due to known data
-# issues. Previously duplicated independently in three separate places
-# (train_classifier.py, create_data_loader, create_multiband_test_loader);
-# consolidated here as the single source of truth. Candidate to move into
-# a config file if this needs to vary per-experiment in the future.
-EXCLUDED_PAIRS: tuple[tuple[int, str], ...] = (
-    (15, "wdm03d5"), (25, "wdm03d5"), (32, "wdm03d5"), (34, "wdm03d5"),
-    (38, "wdm03d5"), (42, "wdm03d5"), (48, "wdm03d5"), (49, "wdm03d5"),
-    (51, "wdm03d5"),
-    (20, "wdm05"), (32, "wdm05"), (42, "wdm05"), (46, "wdm05"),
-    (48, "wdm05"), (51, "wdm05"),
-)
-
-DM_MODELS_3 = ["wdm07d5", "wdm10", "cdm"]
-DM_MODELS_5 = ["wdm03d5", "wdm05", "wdm07d5", "wdm10", "cdm"]
-
-_ROT_TAG_MAP = {"random180": "", "rot90": "_rot90", "none": "_norot"}
-
-# Original CSCS paths, exposed as defaults rather than hardcoded literals.
-DEFAULT_THESIS_ROOT = "/capstor/scratch/cscs/sbrunne/Thesis"
-DEFAULT_IMAGES_ROOT = "/capstor/scratch/cscs/sbrunne"
-
-# Original UZH paths for the multi-band / same-halo helpers, confirmed
-# still valid.
-DEFAULT_UZH_THESIS_ROOT = "/shares/feldmann.ics.mnf.uzh/Santiago/Thesis"
-DEFAULT_UZH_IMAGES_ROOT = "/shares/feldmann.ics.mnf.uzh/Santiago"
-
 
 def dm_models_for(n_classes: int) -> list[str]:
     """Return the DM-model label list for a given number of classes."""
@@ -150,8 +124,8 @@ def create_data_loader(
 
     from wdm_cnn.models.models import GalaxyDataset
 
-    thesis_root = thesis_root or DEFAULT_THESIS_ROOT
-    images_root = images_root or DEFAULT_IMAGES_ROOT
+    thesis_root = thesis_root or CSCS_THESIS
+    images_root = images_root or CSCS_ROOT
 
     if data_type not in ("train", "val", "test"):
         raise ValueError(f"Unknown data_type: {data_type!r}")
@@ -250,8 +224,8 @@ def create_multiband_test_loader(
 
     from wdm_cnn.models.models import GalaxyDataset
 
-    thesis_root = thesis_root or DEFAULT_UZH_THESIS_ROOT
-    images_root = images_root or DEFAULT_UZH_IMAGES_ROOT
+    thesis_root = thesis_root or UZH_THESIS
+    images_root = images_root or UZH_ROOT
 
     dm_models = dm_models_for(n_classes)
     snaps = [60, 63, 66, 69, 72, 75, 80, 85, 90, 95, 100]
@@ -341,7 +315,7 @@ def get_same_halo_images(
         Dict mapping each DM model name to its preprocessed image tensor
         (or None if that file is missing).
     """
-    images_root = images_root or DEFAULT_UZH_IMAGES_ROOT
+    images_root = images_root or UZH_ROOT
     base = f"{images_root}/input_images_{sb_limit}_f"
     halo_nr = halo.split("_")[1]
 
