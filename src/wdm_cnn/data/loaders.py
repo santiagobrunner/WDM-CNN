@@ -124,8 +124,8 @@ def create_data_loader(
 
     from wdm_cnn.models.models import GalaxyDataset
 
-    thesis_root = thesis_root or CSCS_THESIS
-    images_root = images_root or CSCS_ROOT
+    thesis_root = thesis_root or UZH_THESIS
+    images_root = images_root or UZH_ROOT
 
     if data_type not in ("train", "val", "test"):
         raise ValueError(f"Unknown data_type: {data_type!r}")
