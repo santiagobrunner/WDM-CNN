@@ -15,7 +15,7 @@ import numpy as np
 from wdm_cnn.data.io import get_data
 from wdm_cnn.data.labels import label_str2int
 from wdm_cnn.preprocessing.multiband import make_3channel_scaler_input
-from config import CSCS_ROOT, CSCS_THESIS, UZH_ROOT, UZH_THESIS
+from config import CSCS_ROOT, CSCS_THESIS, UZH_ROOT, UZH_THESIS, DM_MODELS_3, DM_MODELS_5
 
 if TYPE_CHECKING:
     # Only needed for type hints -- kept out of the runtime import path so
@@ -43,9 +43,6 @@ EXCLUDED_PAIRS: tuple[tuple[int, str], ...] = (
 # an established suffix convention are listed here; add "ConfigCNN" once
 # its naming convention is decided.
 _SUPPORTED_MODELS = ("SimpleCNN", "CNN5_CLS")
-
-DM_MODELS_3 = ["wdm07d5", "wdm10", "cdm"]
-DM_MODELS_5 = ["wdm03d5", "wdm05", "wdm07d5", "wdm10", "cdm"]
 
 _ROT_TAG_MAP = {"random180": "", "rot90": "_rot90", "none": "_norot"}
 

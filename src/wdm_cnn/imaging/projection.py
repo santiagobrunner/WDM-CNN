@@ -69,6 +69,7 @@ def project_to_pixels(sat_pos_kpc, header):
 
     return col, row
 
+
 def _parse_los_string(s):
     # OBJ_LOS is stored as "[%5.3f,%5.3f,%5.3f]" -- see obs_object.py get_parameters()
     s = s.strip().strip("[]")
