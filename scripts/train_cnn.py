@@ -270,7 +270,7 @@ else:
 rot_tag = ROT_TAG_MAP[opt.rotation]
 
 suffix = _build_classification_suffix(model=opt.model, scaler=scaler_str, SB_limit=opt.SB_Limit, snapshots=opt.snapshots,n_classes=opt.n_classes, 
-                                      augment=opt.augment, apply_exclusions=opt.exclude, online=opt.online_noise, split=opt.split_version, filter_str=opt.filer,
+                                      augment=opt.augment, apply_exclusions=opt.exclude, online=opt.online_noise, split=opt.split_version, filter_str=opt.filter,
                                       rot_tag=rot_tag)
 
 
