@@ -220,3 +220,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+scripts/extract_region_value_added.py
+scripts/halo2pnb.py
+scripts/mockimgs_sb_compute_images
+slurm/
