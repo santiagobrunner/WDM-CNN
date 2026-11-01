@@ -68,10 +68,7 @@ TODO: document the container and how to build it.
 
 ## Data
 
-TODO: the FIREbox zoom simulations are not public. Describe how to obtain them or
-who to contact, and where the generated images (`input_images_<SBlim>_f/`) are
-stored. Small files needed to rerun the pipeline are in this repository
-(`splits/`, `instruments/`, `hp_nside2_centers.txt`).
+The FIREbox zoom simulations are not public. They were created by Prof. Dr. Robert Feldmann (UZH).
 
 ## Usage
 
@@ -112,12 +109,6 @@ python scripts/train_cnn.py --scaler shiftedlog --SB_Limit 35 --snapshots all \
     --n_classes 3 --augment --rotation rot90 --split_version v1
 ```
 
-TODO: add the SLURM wrapper and the table of paper figures:
-
-| Figure / table | Script | Input |
-|---|---|---|
-| TODO | TODO | TODO |
-
 ## Tests
 
 ```bash
@@ -126,14 +117,17 @@ python -m pytest tests/ -v
 
 ## Citation
 
-TODO: BibTeX for the paper. A `CITATION.cff` file lets GitHub show a "Cite this
-repository" button.
+TODO: BibTeX for the paper.
 
 ## License and credits
 
-See `LICENSE`. `extract_region_value_added.py` and `halo2pnb.py` are adapted from
-code by R. Feldmann and L. Tortora, and `mockimgs_sb_compute_images` is adapted
-from pNbody.
+This code is released under the [MIT License](LICENSE).
+
+The image-generation pipeline depends on [pNbody](https://gitlab.com/obswww/pNbody)
+(GPLv3), which is installed separately and is not part of this repository.
+The particle-extraction and pNbody-conversion steps (table above, steps 1-3) use
+scripts by R. Feldmann and L. Tortora that are not included here; they are
+available from the authors on request.
 
 Built on the FIREbox simulations, the pNbody package, the AHF halo finder and
 BPASS stellar population models.
